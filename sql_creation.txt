@@ -1,0 +1,91 @@
+-- Kreiranje tabele profiles
+CREATE TABLE profiles (
+    id bigint primary key generated always as identity,
+    user_id uuid references auth.users(id) not null,
+    username text unique not null,
+    created_at timestamp with time zone default now()
+);
+-- Omogućavanje RLS za profiles
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+
+-- Kreiranje tabele posts
+CREATE TABLE posts (
+    id bigint primary key generated always as identity,
+    title text not null,
+    content text not null,
+    author_id uuid references profiles(user_id) not null,
+    visibility text not null,
+    city_id text not null,
+    local_community_id text,
+    created_at timestamp with time zone default now()
+);
+-- Omogućavanje RLS za posts
+ALTER TABLE posts ENABLE ROW LEVEL SECURITY;
+
+-- Kreiranje tabele comments
+CREATE TABLE comments (
+    id bigint primary key generated always as identity,
+    post_id bigint references posts(id) not null,
+    author_id uuid references profiles(user_id) not null,
+    content text not null,
+    created_at timestamp with time zone default now()
+);
+-- Omogućavanje RLS za comments
+ALTER TABLE comments ENABLE ROW LEVEL SECURITY;
+
+-- Kreiranje tabele votes
+CREATE TABLE votes (
+    id bigint primary key generated always as identity,
+    post_id bigint references posts(id) not null,
+    user_id uuid references profiles(user_id) not null,
+    vote_value integer not null,
+    created_at timestamp with time zone default now()
+);
+-- Omogućavanje RLS za votes
+ALTER TABLE votes ENABLE ROW LEVEL SECURITY;
+
+-- Kreiranje tabele meetings
+CREATE TABLE meetings (
+    id uuid primary key default uuid_generate_v4(),
+    title text not null,
+    description text not null,
+    post_id uuid references posts(id) not null,
+    city_id text not null,
+    local_community_id text,
+    is_city_meeting boolean default false,
+    scheduled_for timestamp with time zone not null,
+    created_at timestamp with time zone default now()
+);
+-- Omogućavanje RLS za meetings
+ALTER TABLE meetings ENABLE ROW LEVEL SECURITY;
+
+-- Dodavanje RLS politika
+-- Politika za profiles
+CREATE POLICY "Allow logged in users to insert profiles"
+ON profiles
+FOR INSERT
+USING (auth.uid() IS NOT NULL);
+
+-- Politika za posts
+CREATE POLICY "Allow logged in users to insert posts"
+ON posts
+FOR INSERT
+USING (auth.uid() IS NOT NULL);
+
+-- Politika za comments
+CREATE POLICY "Allow logged in users to insert comments"
+ON comments
+FOR INSERT
+USING (auth.uid() IS NOT NULL);
+
+-- Politika za votes
+CREATE POLICY "Allow logged in users to insert votes"
+ON votes
+FOR INSERT
+USING (auth.uid() IS NOT NULL);
+
+-- Politika za meetings
+CREATE POLICY "Allow logged in users to insert meetings"
+ON meetings
+FOR INSERT
+USING (auth.uid() IS NOT NULL);
